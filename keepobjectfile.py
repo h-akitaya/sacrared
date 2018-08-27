@@ -16,4 +16,8 @@ if __name__ == '__main__':
     for fn in sys.argv[1:]:
         ftsf = sf.SacraFits(fn)
         objname = ftsf.getHeaderValue('OBJECT')
-        if 
+        if
+
+#
+#
+ 
