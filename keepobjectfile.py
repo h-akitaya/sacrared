@@ -1,23 +1,43 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
-# SaCRA MuSaSHI Fits Header Modifier
+# SaCRA MuSaSHI Keep images with given Object name
+#     ( move other images to ./TempDir/)
 #
-#     Ver 1.2  2018/05/24  H. Akitaya
-#     Ver 1.3  2018/08/01  H. Akitaya
+#     Ver 1.0  2018/08/28  H. Akitaya
 #
 #
-import sys
+import sys, os, glob
 import sacrafits as sf
+
+TempDir = "tmpmove"
 
 # main routine
 
 if __name__ == '__main__':
-    
-    for fn in sys.argv[1:]:
-        ftsf = sf.SacraFits(fn)
-        objname = ftsf.getHeaderValue('OBJECT')
-        if
+    if len(sys.argv) < 2:
+        print("Usage: %s Object_Name" % (sys.argv[0]))
+        exit(1)
 
-#
-#
- 
+    obj_aim = sys.argv[1]
+
+    if os.path.exists(TempDir):
+        if not os.path.isdir(TempDir):
+            print("%s is not directory." % TempDir)
+            exit(1)
+    else:
+        os.mkdir(TempDir)
+
+    fitslist = glob.glob('*.fits')
+    
+    for fn in fitslist:
+        if not os.path.isfile(fn):
+            next
+        try:
+            ftsf = sf.SacraFits(fn)
+            objname = ftsf.getHeaderValue('OBJECT')
+        except:
+            sys.stderr.write('astropy.fits error. Skip.\n')
+            next
+        if objname != obj_aim:
+            os.rename(fn, './%s/%s' % (TempDir, fn) )
+            print('%s: mv %s -> ./%s/' % (objname, fn, TempDir ))

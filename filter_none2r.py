@@ -11,7 +11,7 @@
 
 
 import os,sys
-import sacrafits import as sfts
+import sacrafits as sfts
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
@@ -22,12 +22,12 @@ if __name__ == '__main__':
         name, ext = os.path.splitext(fn)
         if ext != ".fits":
             continue
-        img = SacraFits(fn)
-        img = ftsf.getHeaderValue('FILTER')
+        ftsimg = sfts.SacraFits(fn)
+        fltr = ftsimg.getHeaderValue('FILTER')
 #        print fltr
-        if img == 'NONE':
-            img.setHeaderValue('FILTER', 'r', 'filtername')
+        if fltr == 'NONE':
+            ftsimg.setHeaderValue('FILTER', 'r', 'filtername')
             print('%s FILTER header NONE -> r\n' % fn)
-            img.addHistory('%s FILTER header NONE -> r' % fn)
-            img.updateFitsFile()
-        img.close()
+            ftsimg.addHistory('%s FILTER header NONE -> r' % fn)
+            ftsimg.updateFitsFile()
+        ftsimg.close()

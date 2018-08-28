@@ -1,13 +1,15 @@
-#!/usr/bin/env python
+1#!/usr/bin/env python
 #
 # SaCRA file treatment
 #
 #    2017/xx/xx  Ver 1.0  H. Akitaya
 #    2018/08/21  Ver 1.1  H. Akitaya
 #    2018/08/28  Ver 2.0  H. Akitaya separated from preproc.py
+#    2018/08/28  Ver 2.0  H. Akitaya : add statistics history on dark/flat
 
 
 import sys, os, re, tempfile, time
+import numpy
 import astropy.io.fits as fits
 from pyraf import iraf
 from subprocess import Popen, PIPE
@@ -34,6 +36,8 @@ ImcntrBxs=51
 ImcntrBbxs=101
 ImcntrMsft=100
 Bgfctr=0.8
+
+StatArea='[501:600,501:600]'
 
 class ImgCoord(object):
     def __init__(self, x=0.0, y=0.0):
@@ -86,6 +90,7 @@ class SacraFile(object):
         self.fn_pattern=re.compile(".*")
         iraf.images()
         iraf.proto()
+        self.statarea=StatArea
         return
 
     def setFnPattern(self, regrep_pattern):
@@ -218,7 +223,33 @@ class SacraFile(object):
             
             hdul.close()
         return(fn_list)
-    
+
+    def statisticsAmongImages(self, fn_list):
+        vals=[]
+        for fn in fn_list:
+            print('%s%s' % (fn, self.statarea))
+            result = iraf.imstatistics('%s%s' % (fn, self.statarea), format="no", field="midpt", Stdout=1)
+            print(float(result[0]))
+            vals.append(float(result[0]))
+        c_max = numpy.amax(vals)
+        c_min = numpy.amin(vals)
+        c_ave = numpy.average(vals)
+        c_std = numpy.std(vals)
+        return(c_max, c_min, c_ave, c_std)
+
+    def writeHistoryOfStatisticsAmongImages(self, fn, c_max, c_min, c_ave, c_std):
+        try:
+            ftsf = SacraFits(fn)
+            ftsf.addHistory('Average: %f' % c_ave)
+            ftsf.addHistory('Std. Dev.: %f' % c_std)
+            ftsf.addHistory('Ratio.(%): %f' % (c_std/c_ave*100.0))
+            ftsf.addHistory('Max: %f' % c_max)
+            ftsf.addHistory('Min: %f' % c_min)
+            ftsf.close()
+        except:
+            sys.stderr.write('Statistics write error.\n')
+        
+        
     def flatCombine(self, band, fn_list, out_fn):
         iraf.imcombine( self.getFnsStr(fn_list), out_fn )
         
@@ -233,6 +264,7 @@ class SacraFile(object):
         try:
             iraf.imcombine( "@%s" % tl_f.name, out_fn, lsigma=2.5,\
                             hsigma=2.5, reject="sigclip", combine="average" )
+
         except:
             sys.stderr.write("Imcombine Error(%s).\n" % out_fn)
             return(1)
@@ -273,6 +305,9 @@ class SacraFile(object):
             self.imgCombine(band, lst, out_fn)
         except:
             return(False)
+        c_max, c_min, c_ave, c_std = self.statisticsAmongImages(lst)
+        self.writeHistoryOfStatisticsAmongImages(out_fn, c_max, c_min, c_ave, c_std)
+
         return(True)
             
     def pickupDarkFn(self, band, exptime):
@@ -306,10 +341,13 @@ class SacraFile(object):
         print("  %s " % out_fn)
         # Dark Subtraction
         self.imgCombine(band, lst, tmp_fn1)
+        c_max, c_min, c_ave, c_std = self.statisticsAmongImages(lst)
+
         self.imgSub(tmp_fn1, dark_fn, tmp_fn2)
         maxval = self.getMaxValue(tmp_fn2)
 #        print maxval
         self.imgNormalize(tmp_fn2, out_fn, maxval)
+        self.writeHistoryOfStatisticsAmongImages(out_fn, c_max, c_min, c_ave, c_std)
 
     def objDsubFlatten(self, objname, band, mode):
         fi = FitsInfo(objname=objname, band=band, datatype=DT_OBJ)
