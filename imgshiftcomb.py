@@ -5,6 +5,7 @@
 #
 #     Ver 1.0 2018/05/07   H. Akitaya
 #     Ver 1.1 2018/05/15   H. Akitaya
+#     Ver 2.0 2018/08/28   H. Akitaya; rename imported packages
 #
 
 import sys,os,re,tempfile, time, shutil
@@ -14,8 +15,8 @@ import argparse
 from pyraf import iraf
 from subprocess import Popen, PIPE
 from scrredmisc import *
-from sacrafits import *
-from preproc import *
+import sacrafits as sfts
+import sacrafile as sf
 
 WorkDir = "."
 SubExt = "_sft"
@@ -29,11 +30,11 @@ def main():
     args = parser.parse_args()
 #    print(args.skip_imshift)
 #    exit(1)
-    sf = SacraFile(DT_OBJ)
+    sfobj = sf.SacraFile(DT_OBJ)
     try:
         objname = str(args.sysargs[0])
         band = str(args.sysargs[1])
-        #        xy_init = ImgCoord(float(sys.argv[3]), float(sys.argv[4]))
+        #        xy_init = sf.ImgCoord(float(sys.argv[3]), float(sys.argv[4]))
         #        cbox = float(sys.argv[5])
         fn_coord= str(args.sysargs[2])
         fn_final = str(args.sysargs[3])
@@ -43,8 +44,8 @@ def main():
     except:
         exit(1)
     ftsinf = FitsInfo(objname=objname, band=band, datatype=DT_OBJ)
-    sf.setFnPattern(fn_pattern)
-    fnlst = sf.getFnList(".", ftsinf)
+    sfobj.setFnPattern(fn_pattern)
+    fnlst = sfobj.getFnList(".", ftsinf)
     fnlst.sort()
     #    exit(1)
     #    print fnlst
@@ -64,31 +65,31 @@ def main():
         for fn in fnlst:
             if not fn_pattern.match(fn):
                 continue
-            #            xy = sf.getCentroid(fn, xy_init, cbox)
+            #            xy = sfobj.getCentroid(fn, xy_init, cbox)
             if fn0 == "":
                 fn0 = fn
-            fn_out = sf.getFnWithSubExtention(fn, SubExt)
+            fn_out = sfobj.getFnWithSubExtention(fn, SubExt)
             if not args.skip_imshift:
                 try:
-                    csresult = sf.getCentroidShift(fn, fn_coord, fn0)
-                    dxdy_list = sf.analyseImcentroidShift(csresult, 'median')
+                    csresult = sfobj.getCentroidShift(fn, fn_coord, fn0)
+                    dxdy_list = sfobj.analyseImcentroidShift(csresult, 'median')
                 except:
                     print('#%s : imcontroid error. Skip.' % fn)
                     continue
                 #dxdy = xy.calcShift(xy_init, signplus=False)
-                dxdy = ImgCoord(dxdy_list[0], dxdy_list[1])
+                dxdy = sf.ImgCoord(dxdy_list[0], dxdy_list[1])
                 #            dxdy.show()
                 if os.path.exists(fn_out):
                     print("File %s exists. Skip." % fn_out)
                 else:
-                    sf.imgShift(fn, fn_out, dxdy)
+                    sfobj.imgShift(fn, fn_out, dxdy)
             else:
                 if not os.path.exists(fn_out):
                     print("File %s not found. Skip." % fn_out)
                     continue
                     
             # SCRFVMRK Header (for rejection) check
-            sfts = SacraFits(fn)
+            sfts = sfts.SacraFits(fn)
             if sfts.hasHeader('SCRFVMRK'):
                 if sfts.getHeaderValue('SCRFVMRK') == 'true':
                     print("%s marked as SCRFVMRK=false. Skip.", fn)
@@ -130,12 +131,12 @@ def main():
     finally:
         tl_f.close()
         
-    sfts = SacraFits(fn_final)
-    sfts.setHeaderValue("MJD_AVE", mjd_ave, "Average MJD for combined images.")
-    sfts.setHeaderValue("EXPTIMET", exptime_total, "Total exposure time (s).")
-    sfts.setHeaderValue("NCOMB", nimg, "Number of combined images.")
-    sfts.addHistory("Processed by imgshiftcomb.py")
-    sfts.close()
+    rslt = sfts.SacraFits(fn_final)
+    rslt.setHeaderValue("MJD_AVE", mjd_ave, "Average MJD for combined images.")
+    rslt.setHeaderValue("EXPTIMET", exptime_total, "Total exposure time (s).")
+    rslt.setHeaderValue("NCOMB", nimg, "Number of combined images.")
+    rslt.addHistory("Processed by imgshiftcomb.py")
+    rslt.close()
     
 if __name__ == "__main__":
     try:

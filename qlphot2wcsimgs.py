@@ -15,7 +15,7 @@ from pyraf import iraf
 from subprocess import Popen, PIPE
 from scrredmisc import *
 from sacrafits import *
-from preproc import *
+from sacrafile import *
 
 WorkDir = "."
 SubExt = "_sft"

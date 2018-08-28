@@ -5,6 +5,7 @@
 #
 #     Ver 1.0 2018/05/08   H. Akitaya
 #     Ver 1.1 2018/05/14   H. Akitaya; Automode
+#     Ver 2.0 2018/08/28   H. Akitaya; rename preproc -> sacrafile
 #
 
 import sys,os,re,tempfile, time, shutil
@@ -15,7 +16,7 @@ import pyds9
 from subprocess import Popen, PIPE
 from scrredmisc import *
 from sacrafits import *
-from preproc import *
+import sacrafile as sf
 
 IntPattern = re.compile('\d+')
 WaitTime = 0.5
@@ -83,17 +84,17 @@ def showImages(files, d, automode):
             elif comarray[0] == 'mark':
                 try:
                     print('Mark fitsheader SCRVFMRK=true')
-                    sf = SacraFits(files[n])
-                    sf.setHeaderValue('SCRVFMRK', 'ture', 'Marked by viewfits.py')
-                    sf.close()
+                    sfimg = sf.SacraFits(files[n])
+                    sfimg.setHeaderValue('SCRVFMRK', 'ture', 'Marked by viewfits.py')
+                    sfimg.close()
                 except:
                     printf("Fits file open error. Skip.")
             elif comarray[0] == 'unmark':
                 try:
                     print('Unmark fitsheader SCRVFMRK=false')
-                    sf = SacraFits(files[n])
-                    sf.setHeaderValue('SCRVFMRK', 'false', 'Marked by viewfits.py')
-                    sf.close()
+                    sfimg = sf.SacraFits(files[n])
+                    sfimg.setHeaderValue('SCRVFMRK', 'false', 'Marked by viewfits.py')
+                    sfimg.close()
                 except:
                     printf("Fits file open error. Skip.")
             elif comarray[0] == 'intr':
@@ -122,7 +123,7 @@ def showImages(files, d, automode):
     exit(0)
 #    d.close()
 
-def main():
+if __name__ == "__main__":
     automode = False
     lstfn = sys.argv[1]
     try:
@@ -145,6 +146,3 @@ def main():
     d.set('zoom to fit')
     d.set('scale zscale')
     showImages(files, d, automode)
-
-if __name__ == "__main__":
-    main()

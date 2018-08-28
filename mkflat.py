@@ -7,13 +7,14 @@
 #
 #    Ver  1.0  2018/03/22  H. Akitaya
 #    Ver  1.1  2018/08/21  H. Akitaya
+#    Ver  2.0  2018/08/28  H. Akitaya; rename reference package
 #
 
 
 import os, sys
-from preproc import *
+import sacrafile as sf
 from scrredmisc import *
-MKFLAT_MODE=MOD_MIMG
+MKFLAT_MODE = MOD_MIMG
 
 if __name__ == '__main__':
     mode = MOD_MIMG
@@ -26,5 +27,5 @@ if __name__ == '__main__':
         sys.stderr.write("Wrong exposure time")
         exit(1)
     #main
-    sf=SacraFile(DT_FLAT)
-    sf.mkFlat(band, exptime, MKFLAT_MODE)
+    sffl = sf.SacraFile(DT_FLAT)
+    sffl.mkFlat(band, exptime, MKFLAT_MODE)
