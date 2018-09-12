@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
 # SaCRA MuSaSHI Fits Header Manager
 #
@@ -7,15 +7,20 @@
 #     Ver 1.2  2018/05/24  H. Akitaya
 #     Ver 1.3  2018/08/01  H. Akitaya
 #     Ver 1.4  2018/08/08  H. Akitaya
+#     Ver 1.5  2018/09/07  H. Akitaya; updatemode appended
 
 import sys, math
 from astropy.time import Time
 from astropy.io import fits
 
 class SacraFits( object ):
-    def __init__( self, fn ):
+    def __init__( self, fn, updatemode=True ):
         self.setFilename( fn )
-        self.open()
+        if updatemode==False:
+            self.roopen()
+        else:
+            self.open()
+        
         self.overwrite = False
 
 
@@ -26,6 +31,15 @@ class SacraFits( object ):
 #        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
         try:
             self.hdul = fits.open( self.fn, mode='update', checksum=True )
+        except OSError:
+            sys.stderr.write("Not correct fits file.\n")
+            exit()
+        self.hdr=self.hdul[0].header
+
+    def roopen( self ):
+#        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
+        try:
+            self.hdul = fits.open( self.fn, checksum=True )
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
             exit()
