@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # preprocessing for MuSaSHI image data
 #
 #    2017/xx/xx  Ver 1.0  H. Akitaya
 #    2018/08/21  Ver 1.1  H. Akitaya
 #    2018/08/28  Ver 2.0  H. Akitaya; sacrafile separated
+#    2018/11/09  Ver 2.1  H. Akitaya; declare to use python3
 
 
 import sys,os,re,tempfile, time
