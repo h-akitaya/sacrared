@@ -7,11 +7,13 @@
 #
 #    Ver  1.0  2018/03/21  H. Akitaya
 #    Ver  2.0  2018/08/28  H. Akitaya; rename package name
+#    Ver  2.1  2018/09/18  H. Akitaya; debug for package importing
 #
 
 
 import os, sys
-import sacrafits as sf
+import sacrafile as sf
+from scrredmisc import *
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:

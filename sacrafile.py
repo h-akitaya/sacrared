@@ -1,4 +1,4 @@
-1#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # SaCRA file treatment
 #
@@ -6,8 +6,9 @@
 #    2018/08/21  Ver 1.1  H. Akitaya
 #    2018/08/28  Ver 2.0  H. Akitaya separated from preproc.py
 #    2018/08/28  Ver 2.0  H. Akitaya : add statistics history on dark/flat
-
-
+#    2018/09/18  Ver 2.1  H. Akitaya : bug fix for statistics output, etc.
+#     Ver 2.2  2018/11/09  H. AKitaya; declare to use python3
+#
 import sys, os, re, tempfile, time
 import numpy
 import astropy.io.fits as fits
@@ -99,7 +100,7 @@ class SacraFile(object):
     def getMedian(self, fn):
         try:
             rslt = iraf.imutil.imstatistics(fn, format="no", field="midpt", Stdout=1)
-            midpt = float(rslt[0])
+            midpt = SacraFile.str2float_iraf(rslt[0])
             #            if not type(midpt) == float:
             #                raise ValueError('iraf mstatiscics error')
             return midpt
@@ -229,25 +230,26 @@ class SacraFile(object):
         for fn in fn_list:
             print('%s%s' % (fn, self.statarea))
             result = iraf.imstatistics('%s%s' % (fn, self.statarea), format="no", field="midpt", Stdout=1)
-            print(float(result[0]))
-            vals.append(float(result[0]))
+            print(SacraFile.str2float_iraf(result[0]))
+            vals.append(SacraFile.str2float_iraf(result[0]))
         c_max = numpy.amax(vals)
         c_min = numpy.amin(vals)
         c_ave = numpy.average(vals)
         c_std = numpy.std(vals)
+        print("debug:", c_max, c_min, c_ave, c_std)
         return(c_max, c_min, c_ave, c_std)
 
     def writeHistoryOfStatisticsAmongImages(self, fn, c_max, c_min, c_ave, c_std):
         try:
             ftsf = SacraFits(fn)
-            ftsf.addHistory('Average: %f' % c_ave)
-            ftsf.addHistory('Std. Dev.: %f' % c_std)
-            ftsf.addHistory('Ratio.(%): %f' % (c_std/c_ave*100.0))
-            ftsf.addHistory('Max: %f' % c_max)
-            ftsf.addHistory('Min: %f' % c_min)
-            ftsf.close()
         except:
             sys.stderr.write('Statistics write error.\n')
+        ftsf.addHistory('Average: %f' % c_ave)
+        ftsf.addHistory('Std. Dev.: %f' % c_std)
+        ftsf.addHistory('Ratio.(%%): %f' % (c_std/c_ave*100.0))
+        ftsf.addHistory('Max: %f' % c_max)
+        ftsf.addHistory('Min: %f' % c_min)
+        ftsf.close()
         
         
     def flatCombine(self, band, fn_list, out_fn):
@@ -373,16 +375,29 @@ class SacraFile(object):
             tmp_fn1 = prepareFile( "tmp1.fits" )
             tmp_fn2 = prepareFile( "tmp2.fits" )
             out_fn = prepareFile( self.getFnWithSubExtention(fn, FL_SUBEXT))
+            print self.checkHistoryScrredCode(fn, "#SCRRED_DSUB")
             try:
-                self.imgSub(fn, darkfn, tmp_fn1)
-                self.addFitsHistory(tmp_fn1, "Dark Subracted: %s" % darkfn)
-                self.imgDiv(tmp_fn1, flatfn, out_fn)
-                self.addFitsHistory(out_fn, "Flattened: %s" % flatfn)
+                if not self.checkHistoryScrredCode(fn, "#SCRRED_DSUB"):
+                    self.imgSub(fn, darkfn, tmp_fn1)
+                    self.addFitsHistory(tmp_fn1, "SACRARED: Dark Subtracted: %s" % darkfn)
+                    self.addFitsHistory(tmp_fn1, "SACRARED: #SCRRED_DSUB")
+                if not self.checkHistoryScrredCode(tmp_fn1, "#SCRRED_FLTND"):
+                    self.imgDiv(tmp_fn1, flatfn, out_fn)
+                    self.addFitsHistory(out_fn, "SACRARED: Flattened: %s" % flatfn)
+                    self.addFitsHistory(out_fn, "SACRARED: #SCRRED_FLTND")
                 print(out_fn)
+            except:
+                sys.stderr.write('Fits file %s had been processed. Ignored.\n' % fn )
             finally:
                 cleanFile( tmp_fn1 )
                 cleanFile( tmp_fn2 )
-            
+
+    def checkHistoryScrredCode(self, fn, codestr):
+        sfts = SacraFits(fn)
+        result = sfts.hasHistoryStr(codestr)
+        sfts.close()
+        return(result)
+        
     def getFnWithSubExtention(self, fn, subext):
         name, ext = os.path.splitext(fn)
         return("%s%s%s" % (name, subext, ext) ) #  xxxxxx.ext -> xxxxxxx_yy.ext
@@ -415,3 +430,10 @@ class SacraFile(object):
     def imgNormalize(self, fn_in, fn_out, nrm_factor):
         iraf.imarith(fn_in, "/", nrm_factor, fn_out)
         self.addFitsHistory(fn_out, "Nomalization facor: %9.4f" % nrm_factor)
+
+    @staticmethod
+    def str2float_iraf(valstr):
+        if(valstr) == 'INDEF':
+            return float('nan')
+        else:
+            return float(valstr)

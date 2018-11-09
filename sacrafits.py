@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # SaCRA MuSaSHI Fits Header Manager
 #
@@ -8,8 +8,10 @@
 #     Ver 1.3  2018/08/01  H. Akitaya
 #     Ver 1.4  2018/08/08  H. Akitaya
 #     Ver 1.5  2018/09/07  H. Akitaya; updatemode appended
-
-import sys, math
+#     Ver 1.6  2018/09/18  H. Akitaya; checksum removed
+#     Ver 1.7  2018/11/09  H. Akitaya; declare to use python3
+# 
+import sys, math, re
 from astropy.time import Time
 from astropy.io import fits
 
@@ -30,7 +32,8 @@ class SacraFits( object ):
     def open( self ):
 #        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
         try:
-            self.hdul = fits.open( self.fn, mode='update', checksum=True )
+#            self.hdul = fits.open( self.fn, mode='update', checksum=True )
+            self.hdul = fits.open( self.fn, mode='update', checksum=False )
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
             exit()
@@ -45,6 +48,11 @@ class SacraFits( object ):
             exit()
         self.hdr=self.hdul[0].header
 
+    def hasHistoryStr(self, hstrystr):
+        for hstry_line in self.hdr['history']:
+            if hstrystr in hstry_line:
+                return True
+        return False
 
     def allowOverwrite(self):
         self.overwrite = True
