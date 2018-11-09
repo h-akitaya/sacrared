@@ -56,7 +56,7 @@ class ImgCoord(object):
         return dxdy
 
     def show(self):
-        print self.x, self.y
+        print(self.x, self.y)
 
 class ImcentroidError(Exception):
     pass
@@ -119,7 +119,7 @@ class SacraFile(object):
             nobj=int(cols[5])  # nobj
         except:
             raise ImcentroidError
-        print 'Imcentroid_shift(x, y) = (%f, %f) by %i objects' % (dx, dy, nobj)
+        print('Imcentroid_shift(x, y) = (%f, %f) by %i objects' % (dx, dy, nobj))
         dxdy = []
         dxdy.append(dx)
         dxdy.append(dy)
@@ -139,7 +139,7 @@ class SacraFile(object):
                                      Stdout=1)
         except:
             raise ImcentroidError
-#        print result
+#        print(result)
         return result
 
     def getCentroid(self, fn, xy, cbox):
@@ -302,7 +302,7 @@ class SacraFile(object):
         fi = FitsInfo(exptime=exptime, band=band, datatype=DT_DARK)
         lst = self.getFnList(DarkDir, fi)
         out_fn = self.getDarkFn(band, exptime, fullpath=True)
-        print out_fn
+        print(out_fn)
         try:
             self.imgCombine(band, lst, out_fn)
         except:
@@ -375,7 +375,7 @@ class SacraFile(object):
             tmp_fn1 = prepareFile( "tmp1.fits" )
             tmp_fn2 = prepareFile( "tmp2.fits" )
             out_fn = prepareFile( self.getFnWithSubExtention(fn, FL_SUBEXT))
-            print self.checkHistoryScrredCode(fn, "#SCRRED_DSUB")
+            print(self.checkHistoryScrredCode(fn, "#SCRRED_DSUB"))
             try:
                 if not self.checkHistoryScrredCode(fn, "#SCRRED_DSUB"):
                     self.imgSub(fn, darkfn, tmp_fn1)
