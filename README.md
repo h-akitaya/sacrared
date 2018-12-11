@@ -7,7 +7,7 @@
 #
 #             since 2018; Akitaya,H et al.
 #
-#            akitaya _at_ mail.saitama-u.ac.jp
+#            akitaya _at_ hiroshima-u.ac.jp
 #            h_akitaya _at_ yahoo.co.jp
 #
 #  requirement:

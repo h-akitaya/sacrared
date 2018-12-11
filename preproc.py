@@ -6,6 +6,7 @@
 #    2018/08/21  Ver 1.1  H. Akitaya
 #    2018/08/28  Ver 2.0  H. Akitaya; sacrafile separated
 #    2018/11/09  Ver 2.1  H. Akitaya; declare to use python3
+#    2018/11/21  Ver 2.2  H. Akitaya; flip z-band image
 
 
 import sys,os,re,tempfile, time
@@ -30,16 +31,19 @@ if __name__ == "__main__":
 
     sf1 = sf.SacraFile(DT_DARK)
 #    print exptime
-    sf1.mkDark(band, exptime)
-    sf1.mkDark(band, 5.0)
+    sf1.mkDark(band, exptime, overwrite=False)
+    sf1.mkDark(band, 5.0, overwrite=False)
     
     sf2 = sf.SacraFile(DT_FLAT)
    #    band="i"
     exptime_flat = 5.0
-    sf2.mkFlat(band, exptime_flat, MOD_MIMG)
+    sf2.mkFlat(band, exptime_flat, MOD_MIMG, overwrite=False)
 
     sf3 = sf.SacraFile(DT_OBJ)
-    sf3.objDsubFlatten(objname, band, MOD_MIMG)
+    if band == 'z':
+        sf3.objDsubFlatten(objname, band, MOD_MIMG, flip=True)
+    else:
+        sf3.objDsubFlatten(objname, band, MOD_MIMG)
 
 #    fi = sf.FitsInfo(band=band, datatype=DT_FLAT)
 #    lst=sf.getFnList('flat', fi)
