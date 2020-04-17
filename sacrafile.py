@@ -9,11 +9,18 @@
 #    2018/09/18  Ver 2.1  H. Akitaya : bug fix for statistics output, etc.
 #     Ver 2.2  2018/11/09  H. AKitaya; declare to use python3
 #
-import sys, os, re, tempfile, time
+
+import sys
+import os
+import re
+import tempfile
+import time
+from subprocess import Popen, PIPE
+
 import numpy
 import astropy.io.fits as fits
 from pyraf import iraf
-from subprocess import Popen, PIPE
+
 from scrredmisc import *
 from sacrafits import SacraFits
 
@@ -45,7 +52,7 @@ class ImgCoord(object):
         self.x=x
         self.y=y
         
-    def calcShift(self, coord, signplus=True):
+    def calc_shift(self, coord, signplus=True):
         if signplus:
             factor = 1.0
         else:
@@ -70,7 +77,7 @@ class FitsInfo(object):
         self.band=band
         self.datatype=datatype
 
-    def matchDataParams(self, ftsinf):
+    def match_data_params(self, ftsinf):
         result=False
         if ftsinf.datatype == DT_DARK:
             if self.exptime == ftsinf.exptime and \
@@ -94,10 +101,10 @@ class SacraFile(object):
         self.statarea=StatArea
         return
 
-    def setFnPattern(self, regrep_pattern):
+    def set_fn_pattern(self, regrep_pattern):
         self.fn_pattern = regrep_pattern
 
-    def getMedian(self, fn):
+    def get_median(self, fn):
         try:
             rslt = iraf.imutil.imstatistics(fn, format="no", field="midpt", Stdout=1)
             midpt = SacraFile.str2float_iraf(rslt[0])
@@ -107,7 +114,7 @@ class SacraFile(object):
         except:
             return 0.0
 
-    def analyseImcentroidShift(self, lines, calcmode='mean'):
+    def analyse_imcentroid_shift(self, lines, calcmode='mean'):
 #        print lines
         if len(lines) < 2:
             raise ImcentroidError
@@ -125,9 +132,9 @@ class SacraFile(object):
         dxdy.append(dy)
         return dxdy
         
-    def getCentroidShift(self, fn, coord_fn, ref_fn=""):
+    def get_centroid_shift(self, fn, coord_fn, ref_fn=""):
         try:
-            bg = self.getMedian(fn) # bg estimate from median
+            bg = self.get_median(fn) # bg estimate from median
             print("background: %f\nfn: %s\nref: %s" % (bg, fn, ref_fn))
 #            imcnt_rslt = iraf.images.immatch.imcentroid(fn, "", coord_fn, negative=no, boxsize=Imcntr_Bs, bigboxsize=Imcntr_BBs, background=bg, lower=bg, nitertate=3, verbose=no)
             result = iraf.imcentroid(fn, ref_fn, coord_fn, \
@@ -142,7 +149,7 @@ class SacraFile(object):
 #        print(result)
         return result
 
-    def getCentroid(self, fn, xy, cbox):
+    def get_centroid(self, fn, xy, cbox):
         try:
             result = iraf.proto.imcntr(fn, xy.x, xy.y, cbox=cbox, Stdout=1)
             result_div = ImcntrOutputPattern.findall(result[0])[0]
@@ -153,26 +160,26 @@ class SacraFile(object):
             result = ImgCoord(None, None)
         return result
 
-    def addFitsHeader(self, fn, header, value, comment):
+    def add_fits_header(self, fn, header, value, comment):
         sfts = SacraFits(fn)
-        sfts.setHeaderValue(header, value, comment)
-        sfts.updateFitsFile()
+        sfts.set_header_value(header, value, comment)
+        sfts.update_fits_file()
         sfts.close()
 
-    def addFitsHistory(self, fn, history_str):
+    def add_fits_history(self, fn, history_str):
         sfts = SacraFits(fn)
-        sfts.addHistory(history_str)
-        sfts.updateFitsFile()
+        sfts.add_history(history_str)
+        sfts.update_fits_file()
         sfts.close()
 
-    def darkComb(self, fn_list ):
+    def dark_comb(self, fn_list ):
         return
 
-    def getDarkList(self, exp_t):
+    def get_dark_list(self, exp_t):
         dk_list=[]
         return
 
-    def writeLstToTmpf(self, fn_list):
+    def write_lst_to_tmpf(self, fn_list):
         tl_f = tempfile.NamedTemporaryFile(mode='w+t')
 #        tl_f.writelines(fn_list)
         for fn in fn_list:
@@ -184,7 +191,7 @@ class SacraFile(object):
         tl_f.flush()
         return(tl_f)
         
-    def getFnList(self, workdir, ftsinf_in, subext=""):
+    def get_fn_list(self, workdir, ftsinf_in, subext=""):
         # subext is, for example, '_wcs' in 'yyyymmdd_wcs.fits'
         fn_list=[]
         if subext != "":
@@ -222,7 +229,7 @@ class SacraFile(object):
                 continue
             
             # Check for every data type
-            if not ftsinf.matchDataParams(ftsinf_in):
+            if not ftsinf.match_data_params(ftsinf_in):
 #                print('not required file type\n')
                 continue
 #            print('%s\n' % fn)
@@ -251,23 +258,23 @@ class SacraFile(object):
             ftsf = SacraFits(fn)
         except:
             sys.stderr.write('Statistics write error.\n')
-        ftsf.addHistory('Average: %f' % c_ave)
-        ftsf.addHistory('Std. Dev.: %f' % c_std)
-        ftsf.addHistory('Ratio.(%%): %f' % (c_std/c_ave*100.0))
-        ftsf.addHistory('Max: %f' % c_max)
-        ftsf.addHistory('Min: %f' % c_min)
+        ftsf.add_history('Average: %f' % c_ave)
+        ftsf.add_history('Std. Dev.: %f' % c_std)
+        ftsf.add_history('Ratio.(%%): %f' % (c_std/c_ave*100.0))
+        ftsf.add_history('Max: %f' % c_max)
+        ftsf.add_history('Min: %f' % c_min)
         ftsf.close()
         
         
     def flatCombine(self, band, fn_list, out_fn):
-        iraf.imcombine( self.getFnsStr(fn_list), out_fn )
+        iraf.imcombine( self.get_fns_str(fn_list), out_fn )
         
-    def imgCombine(self, lst, out_fn, reject=False, 
+    def img_combine(self, lst, out_fn, reject=False, 
                    lsigma=2.5, hsigma=2.5, offsets='none', zeroopt='none'):
         if len(lst)==0:
-            sys.stderr.write("(imgCombine) Error: no files in the list\n")
+            sys.stderr.write("(img_combine) Error: no files in the list\n")
             return(1)
-        tl_f = self.writeLstToTmpf(lst)
+        tl_f = self.write_lst_to_tmpf(lst)
         print(tl_f.name)
         if(os.path.isfile(out_fn)):
             print('File %s exists. Abort.' % (out_fn))
@@ -290,20 +297,20 @@ class SacraFile(object):
         finally:
             tl_f.close()
 
-    def getDarkFn(self, band, exp_t, fullpath=False):
+    def get_dark_fn(self, band, exp_t, fullpath=False):
 #        dark_fn = DarkFnTemplate % (band, int(exp_t/100.0))
         dark_fn = DarkFnTemplate % (band, int(exp_t*10))
         if fullpath:
             dark_fn = os.path.abspath(os.path.join(DarkDir, dark_fn))
         return(dark_fn)
 
-    def getFlatFn(self, band, mode, fullpath=False):
+    def get_flat_fn(self, band, mode, fullpath=False):
         flat_fn = FlatFnTemplate % (band, mode)
         if fullpath:
             flat_fn = os.path.abspath(os.path.join(FlatDir, flat_fn))
         return(flat_fn)
     
-    def getFnsStr( self, fn_list ):
+    def get_fns_str( self, fn_list ):
         flg_first = True
         liststr=""
         for name in fn_list:
@@ -315,17 +322,17 @@ class SacraFile(object):
 #        print(liststr)
         return(liststr)
 
-    def mkDark(self, band, exptime, overwrite=False):
+    def make_dark(self, band, exptime, overwrite=False):
         fi = FitsInfo(exptime=exptime, band=band, datatype=DT_DARK)
-        lst = self.getFnList(DarkDir, fi)
-        out_fn = self.getDarkFn(band, exptime, fullpath=True)
+        lst = self.get_fn_list(DarkDir, fi)
+        out_fn = self.get_dark_fn(band, exptime, fullpath=True)
         if os.path.isfile(out_fn):
             print('Dark file still exists.')
             if overwrite==False:
                 print('Skip.')
                 return(True)
         try:
-            self.imgCombine(lst, out_fn)
+            self.img_combine(lst, out_fn)
         except:
             return(False)
         c_max, c_min, c_ave, c_std = self.statisticsAmongImages(lst)
@@ -333,33 +340,33 @@ class SacraFile(object):
 
         return(True)
             
-    def pickupDarkFn(self, band, exptime):
-        darkfn = os.path.join(DarkDir, self.getDarkFn(band, exptime))
+    def pickup_dark_fn(self, band, exptime):
+        darkfn = os.path.join(DarkDir, self.get_dark_fn(band, exptime))
         if not os.path.isfile(darkfn):
             darkfn=None
         return(darkfn)
 
-    def pickupFlatFn(self, band, mode):
-        flatfn = os.path.join(FlatDir, self.getFlatFn(band, MODESTR[mode]))
+    def pickup_FlatFn(self, band, mode):
+        flatfn = os.path.join(FlatDir, self.get_flat_fn(band, MODESTR[mode]))
 #        print flatfn
         if not os.path.isfile(flatfn):
             flatfn=None
         return(flatfn)
 
-    def mkFlat(self, band, exptime, mode, overwrite=False):
-        dark_fn = self.pickupDarkFn(band, exptime)
+    def make_flat(self, band, exptime, mode, overwrite=False):
+        dark_fn = self.pickup_dark_fn(band, exptime)
 #        iraf.clobber="no"
         if dark_fn == None:
 #            print("Dark image for %.1f sec not found\n" % (exptime/1000.0))
             print("Dark image for %.1f sec not found\n" % (exptime))
             return(1)
         fi = FitsInfo(exptime=exptime, band=band, datatype=DT_FLAT)
-        lst = self.getFnList(FlatDir, fi)
-        tmp_fn1 = prepareFile(os.path.join(FlatDir, \
-                                              self.getFlatFn(band, "tmp1")))
-        tmp_fn2 = prepareFile(os.path.join(FlatDir, \
-                                              self.getFlatFn(band, "tmp2")))
-        out_fn = prepareFile(os.path.join(FlatDir, self.getFlatFn(band, MODESTR[mode])))
+        lst = self.get_fn_list(FlatDir, fi)
+        tmp_fn1 = prepare_file(os.path.join(FlatDir, \
+                                              self.get_flat_fn(band, "tmp1")))
+        tmp_fn2 = prepare_file(os.path.join(FlatDir, \
+                                              self.get_flat_fn(band, "tmp2")))
+        out_fn = prepare_file(os.path.join(FlatDir, self.get_flat_fn(band, MODESTR[mode])))
         if os.path.isfile(out_fn):
             print('Dark file still exists.')
             if overwrite==False:
@@ -369,75 +376,75 @@ class SacraFile(object):
         
         print("  %s " % out_fn)
         # Dark Subtraction
-        self.imgCombine(lst, tmp_fn1)
+        self.img_combine(lst, tmp_fn1)
         c_max, c_min, c_ave, c_std = self.statisticsAmongImages(lst)
 
-        self.imgSub(tmp_fn1, dark_fn, tmp_fn2)
-        maxval = self.getMaxValue(tmp_fn2)
+        self.img_sub(tmp_fn1, dark_fn, tmp_fn2)
+        maxval = self.get_max_value(tmp_fn2)
 #        print maxval
-        self.imgNormalize(tmp_fn2, out_fn, maxval)
+        self.img_normalize(tmp_fn2, out_fn, maxval)
         self.writeHistoryOfStatisticsAmongImages(out_fn, c_max, c_min, c_ave, c_std)
 
-    def objDsubFlatten(self, objname, band, mode, flip=False, override=True):
+    def darksub_flatten(self, objname, band, mode, flip=False, override=True):
         fi = FitsInfo(objname=objname, band=band, datatype=DT_OBJ)
-        lst = self.getFnList("./", fi)
+        lst = self.get_fn_list("./", fi)
 #        print(lst)  #Debug
         for fn in lst:
             ftsf = SacraFits(fn)
             try:
-                exptime = float(ftsf.getHeaderValue('EXPTIME'))
+                exptime = float(ftsf.get_header_value('EXPTIME'))
             except:
                 ftsf.close()
                 continue
-            darkfn=self.pickupDarkFn(band, exptime)
+            darkfn=self.pickup_dark_fn(band, exptime)
             if (darkfn == None):
-#                print("(objDsubFlatten) Dark image for %s, %7.2s not found. Skip.\n" % (band, exptime/1000.0))
-                print("(objDsubFlatten) Dark image for %s, %7.2s sec not found. Skip.\n" % (band, exptime))
+#                print("(darksub_flatten) Dark image for %s, %7.2s not found. Skip.\n" % (band, exptime/1000.0))
+                print("(darksub_flatten) Dark image for %s, %7.2s sec not found. Skip.\n" % (band, exptime))
                 continue
             
-            flatfn=self.pickupFlatFn(band, mode)
+            flatfn=self.pickup_FlatFn(band, mode)
             if (flatfn == None):
-                print("(objDsubFlatten) Flat image for %s, %s not found. Skip.\n" % (band, mode))
+                print("(darksub_flatten) Flat image for %s, %s not found. Skip.\n" % (band, mode))
                 continue
-            tmp_fn1 = prepareFile("tmp1.fits")
-            tmp_fn2 = prepareFile("tmp2.fits")
-            tmp_fn3 = prepareFile("tmp3.fits")
-            out_fn = prepareFile( self.getFnWithSubExtention(fn, FL_SUBEXT))
-            print(self.checkHistoryScrredCode(fn, "#SCRRED_DSUB"))
+            tmp_fn1 = prepare_file("tmp1.fits")
+            tmp_fn2 = prepare_file("tmp2.fits")
+            tmp_fn3 = prepare_file("tmp3.fits")
+            out_fn = prepare_file( self.get_fn_with_sub_extention(fn, FL_SUBEXT))
+            print(self.check_history_sccred_code(fn, "#SCRRED_DSUB"))
             try:
-                if not self.checkHistoryScrredCode(fn, "#SCRRED_DSUB"):
-                    self.imgSub(fn, darkfn, tmp_fn1)
-                    self.addFitsHistory(tmp_fn1, "SACRARED: Dark Subtracted: %s" % darkfn)
-                    self.addFitsHistory(tmp_fn1, "SACRARED: #SCRRED_DSUB")
-                if not self.checkHistoryScrredCode(tmp_fn1, "#SCRRED_FLTND"):
+                if not self.check_history_sccred_code(fn, "#SCRRED_DSUB"):
+                    self.img_sub(fn, darkfn, tmp_fn1)
+                    self.add_fits_history(tmp_fn1, "SACRARED: Dark Subtracted: %s" % darkfn)
+                    self.add_fits_history(tmp_fn1, "SACRARED: #SCRRED_DSUB")
+                if not self.check_history_sccred_code(tmp_fn1, "#SCRRED_FLTND"):
                     if(flip == False):
-                        self.imgDiv(tmp_fn1, flatfn, out_fn)
+                        self.img_div(tmp_fn1, flatfn, out_fn)
                     else:
-                        self.imgDiv(tmp_fn1, flatfn, tmp_fn3)
-                        self.imgFlip(tmp_fn3, out_fn)
-                    self.addFitsHistory(out_fn, "SACRARED: Flattened: %s" % flatfn)
+                        self.img_div(tmp_fn1, flatfn, tmp_fn3)
+                        self.img_flip(tmp_fn3, out_fn)
+                    self.add_fits_history(out_fn, "SACRARED: Flattened: %s" % flatfn)
                     if flip == True:
-                        self.addFitsHistory(out_fn, "SACRARED: Fliped for x-direction")
-                    self.addFitsHistory(out_fn, "SACRARED: #SCRRED_FLTND")
+                        self.add_fits_history(out_fn, "SACRARED: Fliped for x-direction")
+                    self.add_fits_history(out_fn, "SACRARED: #SCRRED_FLTND")
                 print(out_fn)
             except:
                 sys.stderr.write('Fits file %s had been processed. Ignored.\n' % fn )
             finally:
-                cleanFile(tmp_fn1)
-                cleanFile(tmp_fn2)
-                cleanFile(tmp_fn3)
+                clean_file(tmp_fn1)
+                clean_file(tmp_fn2)
+                clean_file(tmp_fn3)
 
-    def checkHistoryScrredCode(self, fn, codestr):
+    def check_history_sccred_code(self, fn, codestr):
         sfts = SacraFits(fn)
-        result = sfts.hasHistoryStr(codestr)
+        result = sfts.has_history_str(codestr)
         sfts.close()
         return(result)
         
-    def getFnWithSubExtention(self, fn, subext):
+    def get_fn_with_sub_extention(self, fn, subext):
         name, ext = os.path.splitext(fn)
         return("%s%s%s" % (name, subext, ext) ) #  xxxxxx.ext -> xxxxxxx_yy.ext
             
-    def getMaxValue(self, fn):
+    def get_max_value(self, fn):
         result = iraf.imstatistics(fn, usigma=2.5, lsigma=2.5, nclip=3, \
                                    format="no", field="max", Stdout=1)
         try:
@@ -446,44 +453,46 @@ class SacraFile(object):
             maxval=None
         return(maxval)
 
-    def imgSub(self, fn_in1, fn_in2, fn_out):
+    def img_sub(self, fn_in1, fn_in2, fn_out):
         iraf.imarith(fn_in1, "-", fn_in2, fn_out)
 
-    def imgDiv(self, fn_in1, fn_in2, fn_out):
+    def img_div(self, fn_in1, fn_in2, fn_out):
         iraf.imarith(fn_in1, "/", fn_in2, fn_out)
 
-    def imgFlip(self, fn_in1, fn_out):
+    def img_flip(self, fn_in1, fn_out):
         iraf.imcopy('%s[-*,*]' % (fn_in1), fn_out)
 
-    def imgAddHeaderSkyLevelEstimate(self, fn_in, skyarea):
-        #skyarea = '[x1:x1, y1:y2]'  ## iraf region fromat
+    def img_addheader_skylevel(self, fn_in, skyarea):
+        """
+        Add sky level count into fits header.
+        skyarea = '[x1:x1, y1:y2]'  # iraf region format
+        """
         try:
             skylevel = iraf.imstatistics('%s%s' % (fn_in, skyarea),
                                          format='no', field='midpt',
                                          Stdout=1)
             skycor = (-1.0) * float(skylevel[0])
-            self.addFitsHeader(fn_in, 'SKYLVCOR', skycor, 
+            self.add_fits_header(fn_in, 'SKYLVCOR', skycor, 
                                'Sky correction estimation in %s' % (skyarea))
             print('%s: SKYLVCOR, %f' % (fn_in, skycor))
         except:
             sys.stderr.write('(SKYLVCOR measureing error in %s' % (fn_in))
-            retrun(-1)
-        return(0)
-        
+            return False
+        return True
 
-    def imgShift(self, fn_in, fn_out, dxdy):
+    def img_shift(self, fn_in, fn_out, dxdy):
         try:
             print("imshift %s %s\n" % (fn_in, fn_out))
             iraf.imshift(fn_in, fn_out, dxdy.x, dxdy.y, shifts_file="", \
                          interp_type="linear", boundary_typ="nearest")
             history_str = "Imshifted (%f, %f)" % (dxdy.x, dxdy.y)
-            self.addFitsHistory(fn_out, history_str)
+            self.add_fits_history(fn_out, history_str)
         except:
             sys.stderr.write("Error in imshift: %s\n" % (fn_in))
 
-    def imgNormalize(self, fn_in, fn_out, nrm_factor):
+    def img_normalize(self, fn_in, fn_out, nrm_factor):
         iraf.imarith(fn_in, "/", nrm_factor, fn_out)
-        self.addFitsHistory(fn_out, "Nomalization facor: %9.4f" % nrm_factor)
+        self.add_fits_history(fn_out, "Nomalization facor: %9.4f" % nrm_factor)
 
     @staticmethod
     def str2float_iraf(valstr):

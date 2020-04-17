@@ -19,7 +19,7 @@ def showimgfn(dir, objname):
 #            sys.stderr.write('Error2\n')
             continue
         try:
-            objname_header = ftsimg.getHeaderValue('OBJNAME')
+            objname_header = ftsimg.get_header_value('OBJNAME')
         except:
 #            sys.stderr.write('Error\n')
             continue

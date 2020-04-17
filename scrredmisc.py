@@ -13,13 +13,19 @@ MOD_IMPOL=2 # MuSaSHI Imaging Polarimetry Mode
 
 MODESTR=['mimg', 'simg', 'impol']
 
-def prepareFile(fn):
-    cleanFile(fn)
+def prepare_file(fn):
+    clean_file(fn)
     return(fn)
 
-def cleanFile(fn):
+def clean_file(fn):
     if os.path.isfile(fn):
         os.remove(fn)
 
-       
-        
+def make_subextfn(fn, subext):
+    """
+    Return filename with a subextention.
+    (xxx.ext -> xxx_subext.ext)
+    """
+    fn_strs= os.path.splitext(fn)
+    new_fn = fn_strs[0] + subext + fn_strs[1]
+    return new_fn

@@ -23,15 +23,15 @@ if __name__ == '__main__':
             continue
 
         try:
-            ftsf.setMJDfromOBSTIME()
-            ftsf.setOBJECTfromOBJNAME()
-            ftsf.setAIRMASSfromZD()
-            ftsf.addHistory("Modified by %s" % (sys.argv[0] ))
-            ftsf.modifyExptimeToSec()
-            ftsf.setDummyHeaderForHonirred()
+            ftsf.set_mjd_from_obstime()
+            ftsf.set_object_from_objname()
+            ftsf.set_airmass_from_zd()
+            ftsf.add_history("Modified by %s" % (sys.argv[0] ))
+            ftsf.exptime_to_sec()
+            ftsf.dummy_header_honirred()
         
-            ftsf.showAllHeaders()
-            ftsf.updateFitsFile()
+            ftsf.show_all_headers()
+            ftsf.update_fits_file()
         except:
             sys.stderr.write('%s treatment error. Skip.\n' % (fn))
             continue

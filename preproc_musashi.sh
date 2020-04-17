@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 #
 #    preprocessing MuSaSHI observed data
 #
@@ -7,7 +7,7 @@
 
 datadir='/rawdata/obs'
 workdir='/workarea/Student13/preproc'
-sacrareddir='/home/Student13/sacra_tools/sacrared'
+sacrareddir='/home/akitaya/iraf/sacrared'
 datestr=`date -u +'%Y%m%d'`
 
 #preproc_flag_fn='do_preproc'
@@ -39,9 +39,10 @@ shift $((OPTIND - 1))
 
 # main process
 
-rsync -rav ${datadir}/${datestr} ${workdir}
+#rsync -rav ${datadir}/${datestr} ${workdir}
 
-cd ${workdir}/${datestr}
+#cd ${workdir}/${datestr}
+
 
 ${sacrareddir}/musashi_addheader.py
 ${sacrareddir}/preproc.py

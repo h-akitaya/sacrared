@@ -22,7 +22,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     fn = args.filename
     sfl = sf.SacraFile()
-    midpt = sfl.getMedian(fn)
+    midpt = sfl.get_median(fn)
     print("Examining file: %s" % (fn))
     print("Median (ADU): %10.3f" % (midpt))
     

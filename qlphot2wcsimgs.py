@@ -43,8 +43,8 @@ def main():
     except:
         exit(1)
     ftsinf = FitsInfo(objname=objname, band=band, datatype=DT_OBJ)
-    sf.setFnPattern(fn_pattern)
-    fnlst = sf.getFnList(".", ftsinf)
+    sf.set_fn_pattern(fn_pattern)
+    fnlst = sf.get_fn_list(".", ftsinf)
     fnlst.sort()
     #    exit(1)
     #    print fnlst
@@ -64,24 +64,24 @@ def main():
         for fn in fnlst:
             if not fn_pattern.match(fn):
                 continue
-            #            xy = sf.getCentroid(fn, xy_init, cbox)
+            #            xy = sf.get_centroid(fn, xy_init, cbox)
             if fn0 == "":
                 fn0 = fn
-            fn_out = sf.getFnWithSubExtention(fn, SubExt)
+            fn_out = sf.get_fn_with_sub_extention(fn, SubExt)
             if not args.skip_imshift:
                 try:
-                    csresult = sf.getCentroidShift(fn, fn_coord, fn0)
-                    dxdy_list = sf.analyseImcentroidShift(csresult, 'median')
+                    csresult = sf.get_centroid_shift(fn, fn_coord, fn0)
+                    dxdy_list = sf.analyse_imcentroid_shift(csresult, 'median')
                 except:
                     print('#%s : imcontroid error. Skip.' % fn)
                     continue
-                #dxdy = xy.calcShift(xy_init, signplus=False)
+                #dxdy = xy.calc_shift(xy_init, signplus=False)
                 dxdy = ImgCoord(dxdy_list[0], dxdy_list[1])
                 #            dxdy.show()
                 if os.path.exists(fn_out):
                     print("File %s exists. Skip." % fn_out)
                 else:
-                    sf.imgShift(fn, fn_out, dxdy)
+                    sf.img_shift(fn, fn_out, dxdy)
             else:
                 if not os.path.exists(fn_out):
                     print("File %s not found. Skip." % fn_out)
@@ -89,14 +89,14 @@ def main():
                     
             # SCRFVMRK Header (for rejection) check
             sfts = SacraFits(fn)
-            if sfts.hasHeader('SCRFVMRK'):
-                if sfts.getHeaderValue('SCRFVMRK') == 'true':
+            if sfts.has_header('SCRFVMRK'):
+                if sfts.get_header_value('SCRFVMRK') == 'true':
                     print("%s marked as SCRFVMRK=false. Skip.", fn)
                     nimg_rej += 1
                     continue
             # read fits header (exptime, mjd)
-            exptime = float(sfts.getHeaderValue("EXPTIME"))/1000.0
-            mjd = float(sfts.getHeaderValue("MJD"))
+            exptime = float(sfts.get_header_value("EXPTIME"))/1000.0
+            mjd = float(sfts.get_header_value("MJD"))
             mjd_ave_tmp += (mjd + exptime/24.0/60.0/60.0)
             exptime_total += exptime
             fnlist.append(fn_out)
@@ -109,7 +109,7 @@ def main():
     mjd_ave = mjd_ave_tmp / nimg
     
     # combine
-    tl_f = sf.writeLstToTmpf(fnlist)
+    tl_f = sf.write_lst_to_tmpf(fnlist)
 #    print fnlst
     try:
         print "Combined file: %s" % fn_final
@@ -131,10 +131,10 @@ def main():
         tl_f.close()
         
     sfts = SacraFits(fn_final)
-    sfts.setHeaderValue("MJD_AVE", mjd_ave, "Average MJD for combined images.")
-    sfts.setHeaderValue("EXPTIMET", exptime_total, "Total exposure time (s).")
-    sfts.setHeaderValue("NCOMB", nimg, "Number of combined images.")
-    sfts.addHistory("Processed by imgshiftcomb.py")
+    sfts.set_header_value("MJD_AVE", mjd_ave, "Average MJD for combined images.")
+    sfts.set_header_value("EXPTIMET", exptime_total, "Total exposure time (s).")
+    sfts.set_header_value("NCOMB", nimg, "Number of combined images.")
+    sfts.add_history("Processed by imgshiftcomb.py")
     sfts.close()
     
 if __name__ == "__main__":

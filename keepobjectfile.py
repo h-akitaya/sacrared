@@ -34,7 +34,7 @@ if __name__ == '__main__':
             next
         try:
             ftsf = sf.SacraFits(fn)
-            objname = ftsf.getHeaderValue('OBJECT')
+            objname = ftsf.get_header_value('OBJECT')
         except:
             sys.stderr.write('astropy.fits error. Skip.\n')
             next

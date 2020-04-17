@@ -8,8 +8,10 @@
 
 
 bindir_astr=/usr/local/astrometry/bin/
-radius=0.1
-pixscale=0.74
+#radius=0.1
+radius=0.2
+#pixscale=0.74
+pixscale=0.3312
 #pixscale=1.88777  # prime-focus
 
 
@@ -19,7 +21,7 @@ cleanfile()
 	rm -f $1
     fi
 }
-sx
+
 logwrite()
 {
     if [ "${FLAG_LOG}" = "true" ]; then

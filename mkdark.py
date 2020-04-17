@@ -26,4 +26,4 @@ if __name__ == '__main__':
         exit(1)
     #main
     sfdk = sf.SacraFile(DT_DARK)
-    sfdk.mkDark(band, exptime)
+    sfdk.make_dark(band, exptime)

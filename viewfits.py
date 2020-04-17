@@ -85,7 +85,7 @@ def showImages(files, d, automode):
                 try:
                     print('Mark fitsheader SCRVFMRK=true')
                     sfimg = sf.SacraFits(files[n])
-                    sfimg.setHeaderValue('SCRVFMRK', 'ture', 'Marked by viewfits.py')
+                    sfimg.set_header_value('SCRVFMRK', 'ture', 'Marked by viewfits.py')
                     sfimg.close()
                 except:
                     printf("Fits file open error. Skip.")
@@ -93,7 +93,7 @@ def showImages(files, d, automode):
                 try:
                     print('Unmark fitsheader SCRVFMRK=false')
                     sfimg = sf.SacraFits(files[n])
-                    sfimg.setHeaderValue('SCRVFMRK', 'false', 'Marked by viewfits.py')
+                    sfimg.set_header_value('SCRVFMRK', 'false', 'Marked by viewfits.py')
                     sfimg.close()
                 except:
                     printf("Fits file open error. Skip.")

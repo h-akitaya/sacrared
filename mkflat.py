@@ -28,4 +28,4 @@ if __name__ == '__main__':
         exit(1)
     #main
     sffl = sf.SacraFile(DT_FLAT)
-    sffl.mkFlat(band, exptime, MKFLAT_MODE)
+    sffl.make_flat(band, exptime, MKFLAT_MODE)

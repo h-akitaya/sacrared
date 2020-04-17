@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #   Reduction Pipeline Script (stacking)
 #
@@ -9,7 +9,8 @@ bands='r i z'
 
 objlist=`cut -f 3 -d ' ' explog*.log | uniq | xargs`
 echo ${objlist}
-sacrareddir=/home/Student13/sacra_tools/sacrared
+
+sacrareddir=/home/akitaya/iraf/sacrared
 
 if [ $# -eq 0 ];then
     exptime=30.0

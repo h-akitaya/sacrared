@@ -23,11 +23,11 @@ if __name__ == '__main__':
         if ext != ".fits":
             continue
         ftsimg = sfts.SacraFits(fn)
-        fltr = ftsimg.getHeaderValue('FILTER')
+        fltr = ftsimg.get_header_value('FILTER')
 #        print fltr
         if fltr == 'NONE':
-            ftsimg.setHeaderValue('FILTER', 'r', 'filtername')
+            ftsimg.set_header_value('FILTER', 'r', 'filtername')
             print('%s FILTER header NONE -> r\n' % fn)
-            ftsimg.addHistory('%s FILTER header NONE -> r' % fn)
-            ftsimg.updateFitsFile()
+            ftsimg.add_history('%s FILTER header NONE -> r' % fn)
+            ftsimg.update_fits_file()
         ftsimg.close()

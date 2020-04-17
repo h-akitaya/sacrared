@@ -11,56 +11,74 @@
 #     Ver 1.6  2018/09/18  H. Akitaya; checksum removed
 #     Ver 1.7  2018/11/09  H. Akitaya; declare to use python3
 # 
+
 import sys, math, re
 from astropy.time import Time
 from astropy.io import fits
 
-class SacraFits( object ):
-    def __init__( self, fn, updatemode=True ):
-        self.setFilename( fn )
-        if updatemode==False:
-            self.roopen()
+class SacraFits(object):
+    def __init__(self, fn, hdul=None, updatemode=True):
+        self.fn = fn
+        self.hdul = hdul  # HDUList
+        if hdul is None:
+            if updatemode==False:
+                self.roopen()
+            else:
+                self.open()
         else:
-            self.open()
-        
-        self.overwrite = False
+            self.set_hdr()
+        self.overwrite = False  # overwrite mode
 
+    def hdul_check(self):
+        if isinstance(self.hdul, astropy.io.fits.hdu.hdulist.HDUList):
+            return True
+        else:
+            sys.stderr.write('Not correct HDUList.\n')
+            exit(1)
 
-    def setFilename( self, fn ):
+    def set_filename(self, fn):
         self.fn = fn
         
-    def open( self ):
-#        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
+    def open(self):
         try:
-#            self.hdul = fits.open( self.fn, mode='update', checksum=True )
-            self.hdul = fits.open( self.fn, mode='update', checksum=False )
+            self.hdul = fits.open(self.fn, mode='update', checksum=False )
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
             exit()
         self.hdr=self.hdul[0].header
 
-    def roopen( self ):
+    def set_hdr(self):
+        """
+        Set HDUList from argument.
+        """
+        try:
+            self.hdr = self.hdul[0].header
+        except:
+            sys.stderr.write('Not correct HDUList.\n')
+            exit(1)
+
+    def roopen(self):
 #        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
         try:
-            self.hdul = fits.open( self.fn, checksum=True )
+            self.hdul = fits.open(self.fn, checksum=True)
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
             exit()
         self.hdr=self.hdul[0].header
 
-    def hasHistoryStr(self, hstrystr):
+    def has_history_str(self, hstrystr):
         for hstry_line in self.hdr['history']:
             if hstrystr in hstry_line:
                 return True
         return False
 
-    def allowOverwrite(self):
+    def allow_overwrite(self):
         self.overwrite = True
 
-    def denyOverwrite(self):
+    def deny_overwrite(self):
         self.overwrite = False
         
-    def hasHeader(self, header):
+    def has_header(self, header):
         try:
             dummy = self.hdr[header]
             return True
@@ -69,7 +87,7 @@ class SacraFits( object ):
         return False
 
     def writeOK(self, header):
-        if self.hasHeader(header):
+        if self.has_header(header):
             if self.overwrite == False:
                 return False
         else:
@@ -77,64 +95,71 @@ class SacraFits( object ):
     
     def close(self):
         self.hdul.close()
-    def getHeaderValue(self, header):
+        
+    def get_header_value(self, header):
         return self.hdr[header]
-    def setHeaderValue(self, header, value, comment):
+    
+    def set_header_value(self, header, value, comment):
         self.hdr[header] = (value, comment)
-    def addHistory(self, history_str):
+        
+    def add_history(self, history_str):
         self.hdr['history'] = history_str
-    def showAllHeaders(self):
+        
+    def show_all_headers(self):
         print(repr(self.hdr))
         
-    def setMJDfromOBSTIME(self):
+    def set_mjd_from_obstime(self):
         if not self.writeOK("MJD"):
             return 1
-        time_str = self.getHeaderValue("DATE-OBS")
+        time_str = self.get_header_value("DATE-OBS")
         t = Time(time_str, format='isot', scale='utc')
-        self.setHeaderValue("MJD", t.mjd, "MJD of DATE-OBS")
+        self.set_header_value("MJD", t.mjd, "MJD of DATE-OBS")
         
-    def modifyExptimeToSec(self):
-        if not self.hasHeader("EXPTMSEC"):
-            expt_ms = self.getHeaderValue("EXPTIME")
+    def exptime_to_sec(self):
+        if not self.has_header("EXPTMSEC"):
+            expt_ms = self.get_header_value("EXPTIME")
             expt_s = float(expt_ms)/1000.0
-            self.setHeaderValue("EXPTMSEC", expt_ms, "Exposure Time [msec]")
-            self.setHeaderValue("EXPTIME", expt_s, "Exposure Time [sec]")
+            self.set_header_value("EXPTMSEC", expt_ms, "Exposure Time [msec]")
+            self.set_header_value("EXPTIME", expt_s, "Exposure Time [sec]")
         
-    def setOBJECTfromOBJNAME(self):
+    def set_object_from_objname(self):
         if not self.writeOK("OBJECT"):
             return 1
-        self.setHeaderValue("OBJECT", self.getHeaderValue("OBJNAME"), "Object name (same as OBJNAME)")
+        self.set_header_value("OBJECT", self.get_header_value("OBJNAME"), "Object name (same as OBJNAME)")
 
-    def setAIRMASSfromZD(self):
-        if not self.hasHeader("ZD"):
+    def set_airmass_from_zd(self):
+        if not self.has_header("ZD"):
             return 1
         if not self.writeOK("AIRMASS"):
             return 1
-        airmass = 1.0/math.cos(math.pi/180.0*float(self.getHeaderValue("ZD")))
+        airmass = 1.0/math.cos(math.pi/180.0*float(self.get_header_value("ZD")))
         airmass = round(airmass, 6)
-        self.setHeaderValue("AIRMASS", airmass, "Airmass")
+        self.set_header_value("AIRMASS", airmass, "Airmass")
         
-    def updateFitsFile(self):
+    def update_fits_file(self):
         self.hdul.flush()
 
-    def setDummyHeaderForHonirred(self):
-        self.setHeaderValue("WH_IRAF2", "NA", "Dummy for honirred" )
+    def dummy_header_honirred(self):
+        self.set_header_value("WH_IRAF2", "NA", "Dummy for honirred" )
         if not self.writeOK("HA"):
             return 1
-        self.setHeaderValue("HA", 0.0, "Dummy for honirred" )
+        self.set_header_value("HA", 0.0, "Dummy for honirred" )
         if not self.writeOK("HA-DEG"):
             return 1
-        self.setHeaderValue("HA-DEG", 0.0, "Dummy for honirred" )
+        self.set_header_value("HA-DEG", 0.0, "Dummy for honirred" )
 
 
-    def chkModified(self):
+    def chk_modified(self):
         if self.hdr.countget('SCRFTSMD') != 0:
             return True
         else:
             return False
 
-    def addHeaderModifiedHistory(self):
-        self.setHeaderValue("SCRFTSMD", "True", "SaCRA FITS Modified History (True=yes")
+    def add_header_modified_history(self):
+        self.set_header_value("SCRFTSMD", "True", "SaCRA FITS Modified History (True=yes")
+
+    def writeto(self, fn):
+        self.hdul.writeto(fn)
 
 # main routine
     

@@ -1,11 +1,17 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 #
 # image stacking for MuSaSHI preprocessed images
 #
 #    2018/11/26  Ver 1.0  H. Akitaya
+#    2019/07/22  Ver 1.0  H. Akitaya
+#         output file name corrected
 
-import sys, os, re, time
+import sys
+import os
+import re
+import time
 import argparse
+
 from scrredmisc import *
 import sacrafile as sf
 
@@ -36,8 +42,8 @@ if __name__ == "__main__":
     band = args.band
     print(objname, band, exptime)
 
-    out_rej_fn = '%s_%s_comb.fits' % (objname, band)
-    out_norej_fn = '%s_%s_rejcomb.fits' % (objname, band)
+    out_rej_fn = '%s_%s_rejcomb.fits' % (objname, band)
+    out_norej_fn = '%s_%s_norejcomb.fits' % (objname, band)
 
     for fn in [out_rej_fn, out_norej_fn]:
         if os.path.isfile(fn):
@@ -48,24 +54,25 @@ if __name__ == "__main__":
             else:
                 print('Skip.')
 
-    fi = sf.FitsInfo(objname=objname, exptime=exptime, band=band, datatype=DT_OBJ)
+    fi = sf.FitsInfo(objname=objname, exptime=exptime, band=band,
+                     datatype=DT_OBJ)
     sfl = sf.SacraFile()
     print('Construction file list...')
-    fnlst = sfl.getFnList('./', fi, subext=args.sub_extention)
+    fnlst = sfl.get_fn_list('./', fi, subext=args.sub_extention)
 
     print('Measuring sky level...')
     skyarea = sf.StatArea
     fnlst_tmp = fnlst
     for fn in fnlst_tmp:
-        result = sfl.imgAddHeaderSkyLevelEstimate(fn, skyarea)
-        if result != 0:
-            fnlst.remove(fn) # remove image with sky estimate error
+        result = sfl.img_addheader_skylevel(fn, skyarea)
+        if result is False:
+            fnlst.remove(fn)  # remove image with sky estimate error.
     
     print('Combining...')
     try:
-        sfl.imgCombine(fnlst, out_rej_fn, reject=True, lsigma=2.5, hsigma=2.5,
+        sfl.img_combine(fnlst, out_rej_fn, reject=True, lsigma=2.5, hsigma=2.5,
                        offsets='wcs', zeroopt='!SKYLVCOR')
-        sfl.imgCombine(fnlst, out_norej_fn, reject=False,
+        sfl.img_combine(fnlst, out_norej_fn, reject=False,
                        offsets='wcs', zeroopt='!SKYLVCOR')
     except:
         sys.stderr.write('Combine error.\n')
