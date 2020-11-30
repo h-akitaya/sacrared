@@ -20,6 +20,7 @@ from subprocess import Popen, PIPE
 import numpy
 import astropy.io.fits as fits
 from pyraf import iraf
+from ccdproc import ImageFileCollection
 
 from scrredmisc import *
 from sacrafits import SacraFits
@@ -65,10 +66,44 @@ class ImgCoord(object):
     def show(self):
         print(self.x, self.y)
 
+
 class ImcentroidError(Exception):
     pass
+
+
 class ImcentrError(Exception):
     pass
+
+
+class ImageList(object):
+    """
+    Image list class.
+    """
+
+    def __init__(self):
+        self.fnlist = []  # file list
+        pass
+
+    def get_fnlist(self, loc, fnpattern, objname=None,
+                   exptime=None, filtername=None):
+        """
+        Get FITS file list with objname, exptime, and filtername.
+        @param loc: directory location.
+        @param fnpattern: filename pattern (e.g. '*_wcs.fits').
+        @param objname: object name.
+        @param exptime: exposure time.
+        @param filtername: optical filter name.
+        @return: ImageFileCollection object filtered by injected parameters.
+        """
+        keys = ['exptime', 'objname', 'filter']
+        ic_all = ImageFileCollection(location=loc,
+                                     keywords=keys,
+                                     glob_include=fnpattern,
+                                     glob_exclude=None)
+        return ic_all.files_filtered(filter=filtername,
+                                     objname=objname,
+                                     exptime=exptime)
+
 
 class FitsInfo(object):
     def __init__(self, objname=None, exptime=None, band=None, datatype=None ):
@@ -91,7 +126,8 @@ class FitsInfo(object):
                 self.objname == ftsinf.objname):
                 result=True
         return(result)
-        
+
+
 class SacraFile(object):
     def __init__(self, datatype=None):
         self.datatype=datatype
@@ -113,6 +149,7 @@ class SacraFile(object):
             return midpt
         except:
             return 0.0
+
 
     def analyse_imcentroid_shift(self, lines, calcmode='mean'):
 #        print lines
@@ -136,18 +173,19 @@ class SacraFile(object):
         try:
             bg = self.get_median(fn) # bg estimate from median
             print("background: %f\nfn: %s\nref: %s" % (bg, fn, ref_fn))
-#            imcnt_rslt = iraf.images.immatch.imcentroid(fn, "", coord_fn, negative=no, boxsize=Imcntr_Bs, bigboxsize=Imcntr_BBs, background=bg, lower=bg, nitertate=3, verbose=no)
-            result = iraf.imcentroid(fn, ref_fn, coord_fn, \
-                                     negative = "no", \
-                                     lower = bg * Bgfctr, niterate = 7, \
-                                     verbose="no", boxsize = ImcntrBxs, \
-                                     bigbox = ImcntrBbxs, \
-                                     maxshift = ImcntrMsft, \
+            # imcnt_rslt = iraf.images.immatch.imcentroid(fn, "", coord_fn, negative=no, boxsize=Imcntr_Bs, bigboxsize=Imcntr_BBs, background=bg, lower=bg, nitertate=3, verbose=no)
+            result = iraf.imcentroid(fn, ref_fn, coord_fn,
+                                     negative = "no",
+                                     lower = bg * Bgfctr, niterate = 7,
+                                     verbose="no", boxsize = ImcntrBxs,
+                                     bigbox = ImcntrBbxs,
+                                     maxshift = ImcntrMsft,
                                      Stdout=1)
         except:
             raise ImcentroidError
 #        print(result)
         return result
+
 
     def get_centroid(self, fn, xy, cbox):
         try:
@@ -160,11 +198,13 @@ class SacraFile(object):
             result = ImgCoord(None, None)
         return result
 
+
     def add_fits_header(self, fn, header, value, comment):
         sfts = SacraFits(fn)
         sfts.set_header_value(header, value, comment)
         sfts.update_fits_file()
         sfts.close()
+
 
     def add_fits_history(self, fn, history_str):
         sfts = SacraFits(fn)
@@ -181,10 +221,10 @@ class SacraFile(object):
 
     def write_lst_to_tmpf(self, fn_list):
         tl_f = tempfile.NamedTemporaryFile(mode='w+t')
-#        tl_f.writelines(fn_list)
+        #        tl_f.writelines(fn_list)
         for fn in fn_list:
-#            print(fn)
-#            fnpath = os.path.split(fn)
+            #            print(fn)
+            # fnpath = os.path.split(fn)
             tl_f.write( "%s\n" % fn)
         tl_f.flush()
         tl_f.seek(0)

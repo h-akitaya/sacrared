@@ -24,7 +24,7 @@ if __name__ == '__main__':
     sfl = sf.SacraFile()
     midpt = sfl.get_median(fn)
     print("Examining file: %s" % (fn))
-    print("Median (ADU): %10.3f" % (midpt))
+    print("Median (ADU): %10.3f" % midpt)
     
 
         

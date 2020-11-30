@@ -10,6 +10,7 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
+
 class Aperture(object):
     def __init__(self, apsize, r_in, r_out, skycoord):
         self.apsize = apsize * u.arcsec
@@ -20,6 +21,7 @@ class Aperture(object):
     @staticmethod
     def get_skycoord_from_radecstr(radecstr):
         return SkyCoord(radecstr, unit=(u.hourangle, u.deg))
+
 
 class AperturePhotometry(object):
     def __init__(self, hdu, skycoord, apsize, r_in, r_out):
@@ -63,7 +65,8 @@ class AperturePhotometry(object):
         phot_table['residual_aperture_sum'].info.format = '%.8g'
         count = float(phot_table['residual_aperture_sum'][0])
         return count
-        
+
+
 if __name__ == '__main__':
     if (len(sys.argv) < 2):
         print('%s filename' % (sys.argv[0]))

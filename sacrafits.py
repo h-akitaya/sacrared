@@ -12,7 +12,12 @@
 #     Ver 1.7  2018/11/09  H. Akitaya; declare to use python3
 # 
 
-import sys, math, re
+import os
+import sys
+import math
+import re
+
+import astropy
 from astropy.time import Time
 from astropy.io import fits
 
@@ -20,13 +25,14 @@ class SacraFits(object):
     def __init__(self, fn, hdul=None, updatemode=True):
         self.fn = fn
         self.hdul = hdul  # HDUList
+        self.updatemode = updatemode
         if hdul is None:
-            if updatemode==False:
+            if updatemode == False:
                 self.roopen()
             else:
-                self.open()
+                self.rwopen()
         else:
-            self.set_hdr()
+            self.check_hdul()
         self.overwrite = False  # overwrite mode
 
     def hdul_check(self):
@@ -34,28 +40,25 @@ class SacraFits(object):
             return True
         else:
             sys.stderr.write('Not correct HDUList.\n')
-            exit(1)
+            sys.exit(1)
 
     def set_filename(self, fn):
         self.fn = fn
         
-    def open(self):
+    def rwopen(self):
         try:
-            self.hdul = fits.open(self.fn, mode='update', checksum=False )
+            self.hdul = fits.open(self.fn, mode='update', checksum=False)
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
-            exit()
-        self.hdr=self.hdul[0].header
+            sys.exit(1)
 
-    def set_hdr(self):
+    def check_hdul(self):
         """
-        Set HDUList from argument.
+        Check HDUList type.
         """
-        try:
-            self.hdr = self.hdul[0].header
-        except:
+        if (not type(self.hdul) is astropy.io.fits.hdu.hdulist.HDUList):
             sys.stderr.write('Not correct HDUList.\n')
-            exit(1)
+            sys.exit(1)
 
     def roopen(self):
 #        fits_img_fn = fits.util.get_testdata_filepath(self.fn)
@@ -63,11 +66,10 @@ class SacraFits(object):
             self.hdul = fits.open(self.fn, checksum=True)
         except OSError:
             sys.stderr.write("Not correct fits file.\n")
-            exit()
-        self.hdr=self.hdul[0].header
+            sys.exit(1)
 
     def has_history_str(self, hstrystr):
-        for hstry_line in self.hdr['history']:
+        for hstry_line in self.hdul[0].header['history']:
             if hstrystr in hstry_line:
                 return True
         return False
@@ -80,7 +82,7 @@ class SacraFits(object):
         
     def has_header(self, header):
         try:
-            dummy = self.hdr[header]
+            dummy = self.hdul[0].header[header]
             return True
         except KeyError:
             return False
@@ -97,16 +99,19 @@ class SacraFits(object):
         self.hdul.close()
         
     def get_header_value(self, header):
-        return self.hdr[header]
-    
+        return self.hdul[0].header[header]
+
+    def get_header_comment(self, header):
+        return self.hdul[0].header.comments[header]
+
     def set_header_value(self, header, value, comment):
-        self.hdr[header] = (value, comment)
+        self.hdul[0].header[header] = (value, comment)
         
     def add_history(self, history_str):
-        self.hdr['history'] = history_str
+        self.hdul[0].header['history'] = history_str
         
     def show_all_headers(self):
-        print(repr(self.hdr))
+        print(repr(self.hdul[0].header))
         
     def set_mjd_from_obstime(self):
         if not self.writeOK("MJD"):
@@ -139,6 +144,9 @@ class SacraFits(object):
     def update_fits_file(self):
         self.hdul.flush()
 
+    def flush(self):
+        self.hdul.flush()
+        
     def dummy_header_honirred(self):
         self.set_header_value("WH_IRAF2", "NA", "Dummy for honirred" )
         if not self.writeOK("HA"):
@@ -150,7 +158,7 @@ class SacraFits(object):
 
 
     def chk_modified(self):
-        if self.hdr.countget('SCRFTSMD') != 0:
+        if self.hdul[0].header.countget('SCRFTSMD') != 0:
             return True
         else:
             return False
@@ -158,8 +166,17 @@ class SacraFits(object):
     def add_header_modified_history(self):
         self.set_header_value("SCRFTSMD", "True", "SaCRA FITS Modified History (True=yes")
 
-    def writeto(self, fn):
-        self.hdul.writeto(fn)
+    def writeto(self):
+        if os.path.isfile(self.fn):
+            if self.updatemode:
+                print('File {} exists. Overwrite.'.format(self.fn))
+                os.remove(self.fn)
+                self.hdul.writeto(self.fn)
+            else:
+                print('File {} exists. Abort.'.format(self.fn))
+        else:
+            self.hdul.writeto(self.fn)
+                            
 
 # main routine
     

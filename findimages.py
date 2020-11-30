@@ -3,27 +3,28 @@
 import os, sys
 import sacrafits as sfts
 
+
 def showimgfn(dir, objname):
-    fnlist=[]
+    fnlist = []
     fns = os.listdir(dir)
     fns.sort()
     for fn in fns:
-        fn_path=os.path.abspath('./%s/%s' % (dir, fn))
+        fn_path = os.path.abspath('./%s/%s' % (dir, fn))
         if not os.path.isfile(fn_path):
             sys.stderr.write('%s not file Error\n' % fn_path)
             continue
-#        print(fn_path)
+        #        print(fn_path)
         try:
             ftsimg = sfts.SacraFits(fn_path, updatemode=False)
         except:
-#            sys.stderr.write('Error2\n')
+            #            sys.stderr.write('Error2\n')
             continue
         try:
             objname_header = ftsimg.get_header_value('OBJNAME')
         except:
-#            sys.stderr.write('Error\n')
+            #            sys.stderr.write('Error\n')
             continue
-#        print(objname_header)
+        #        print(objname_header)
         if objname_header == objname:
             fnlist.append(fn_path)
         ftsimg.close()
@@ -34,6 +35,7 @@ def printfnlist(fnlist):
     fnlist.sort()
     for fn in fnlist:
         print(fn)
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -47,4 +49,3 @@ if __name__ == '__main__':
         if not os.path.isdir(dir):
             continue
         showimgfn(dir, objname)
-        

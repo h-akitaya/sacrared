@@ -32,21 +32,57 @@ class SacraCCD(object):
             self.ccddata = CCDData.read(self.fn, unit=unit)
         except:
             sys.stderr.write('File %s read error.\n' % self.fn)
-            exit(1)
+            sys.exit(1)
 
+    def add_scalar(self, value):
+        unit = self.ccddata.unit
+        self.ccddata.data = CCDData(np.asarray(self.ccddata.data)
+                                    + value, unit=unit)
+
+    def sub_scalar(self, value):
+        unit = self.ccddata.unit
+        self.ccddata.data = CCDData(np.asarray(self.ccddata.data)
+                                    - value, unit=unit)
+        
+    def multiply_scalar(self, value):
+        unit = self.ccddata.unit
+        self.ccddata.data = CCDData(np.asarray(self.ccddata.data)
+                                    * value, unit=unit)        
+
+    def divide_scalar(self, value):
+        unit = self.ccddata.unit
+        self.ccddata.data = CCDData(np.asarray(self.ccddata.data)
+                                    / value, unit=unit)        
+        
     def write(self, fn):
         """
         Write CCDData to FITS file.
         """
-        try:
-            self.ccddata.write(fn)
-        except:
-            sys.stderr.write('File %s write error.\n' % fn)
-            exit(1)
-        if self.verbose:
-            print('Output: %s' % (fn))
-
-        return crrej_ccd  # CCDData (w/o mask)
+        self.ccddata.mask = None
+        print(type(self.ccddata))
+        sys.exit(1)
+        newscrf = SacraFits(fn, hdul = self.ccddata.to_hdu())
+        newscrf.hdul[0].header = self.ccddata.to_hdu()[0].header
+        if os.path.exists(fn):
+            if not self.overwrite:
+                sys.stderr.write('File %s exists. Abort.\n' % (fn))
+                sys.exit(0)
+            else:
+                try:
+                    os.remove(fn)
+                    print('File %s removed.' % (fn))
+                except:
+                    sys.stderr.write('File %s remove error.\n' % (fn))
+                    sys.exit(1)
+        #history_strs = [datetime.utcnow().strftime('# %Y-%m-%d %H:%M:%S UTC'),
+        #                'sacraccd cosmicray rejection (lacosmic)',
+        #                '%s: %i pixels rejected.' \
+        #                % (self.fn, rejected_pixel)]
+        #for history_str in history_strs:
+        #    if self.verbose:
+        #        print(history_str)
+        #    newscrf.add_history(history_sr)
+        newscrf.writeto()
 
     def crrej_write(self, sigclip=5, gain=1.0, readnoise=15.0,
                     psffwhm=5.0, subext='_cr'):
@@ -54,22 +90,24 @@ class SacraCCD(object):
         Cosmic-ray rejection using lacosmic, and write new file.
         """
         crrej_ccd = cosmicray_lacosmic(self.ccddata, sigclip=sigclip,
-                                       readnoise=readnoise, psffwhm=psffwhm).multiply(1.0/gain*SacraCCD.UNIT_CFACTOR)
+                                       readnoise=readnoise, gain=gain, niter=8,
+                                       psffwhm=psffwhm, psfsize=psffwhm*2.5).multiply(1.0/gain*SacraCCD.UNIT_CFACTOR)
         rejected_pixel = np.count_nonzero(crrej_ccd.mask)
         
         crrej_ccd.mask = None
         newfn = self.get_subext_fn(subext=subext)
         newscrf = SacraFits(newfn, hdul=crrej_ccd.to_hdu())
+        newscrf.hdul[0].header = self.ccddata.to_hdu()[0].header
         if os.path.exists(newfn):
             if not self.overwrite:
                 sys.stderr.write('File %s exists. Abort.\n' % (newfn))
-                exit(1)
+                sys.exit(1)
             else:
                 try:
                     os.remove(newfn)
                 except:
                     sys.stderr.write('File %s remove error.\n' % (newfn))
-                    exit(1)
+                    sys.exit(1)
                 print('File %s removed.' % (newfn))
         
         history_strs = [datetime.utcnow().strftime('# %Y-%m-%d %H:%M:%S UTC'),
@@ -80,13 +118,19 @@ class SacraCCD(object):
             if self.verbose:
                 print(history_str)
             newscrf.add_history(history_str)
-        newscrf.writeto(newfn)
+        print('Write file {}'.format(newfn))
+        newscrf.writeto()
 
-    def get_subext_fn(self, subext='_cr'):
+    def skylevel_correct(self):
+        ccddata_sky = ccddata[SKY_X1, SKY_X2: SKY_Y1, SKY_Y2]
+        return np.median(ccddata_sky) * (-1.0)
+
+    def get_subext_fn(self, subext='_subext'):
         """
         Return filename with sub-extention.
         """
         return scrm.make_subextfn(self.fn, subext)
+
 
 """
 Test code for SacraCCD.
@@ -94,7 +138,7 @@ Test code for SacraCCD.
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        exit(1)
+        sys.exit(1)
     sccd = SacraCCD(fn=sys.argv[1], overwrite=True)
     sccd.read()
     sccd.crrej_write()
